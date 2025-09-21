@@ -13,18 +13,16 @@
     "eventDisabled": [
         "join.js"
     ],
-    "EMAIL": "",
+    "EMAIL": "firetix000@gmail.com",
     "PASSWORD": "",
     "OTPKEY": "",
-    "BOTNAME": "─꯭─⃝‌‌𝐒𝐡𝐚𝐡𝐚𝐝𝐚𝐭 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭",
+    "BOTNAME": "─꯭─⃝‌‌Emni",
     "PREFIX": "/",
     "ADMINBOT": [
-        "100001039692046",
-        "100001039692046",
-        "100001039692046"
+        "61557991443492"
     ],
     "NDH": [
-        "100001039692046"
+        "61557991443492"
     ],
     "DATABASE": {
         "sqlite": {
