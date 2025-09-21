@@ -1,48 +1,68 @@
+const OWNER_UID = "61557991443492";
+
 module.exports.config = {
- name: "file",
- version: "1.0.1",
- hasPermssion: 2,
- credits: "nazrul",
- description: "Delete the file or folder in the commands folder",
- commandCategory: "Admin",
- usages: "\ncommands start <text>\ncommands ext <text>\ncommands <text>\ncommands [leave blank]\ncommands help\nNOTE: <text> is the character you want to enter",
- cooldowns: 5
+  name: "file",
+  version: "1.0.1",
+  hasPermssion: 2,
+  credits: "nazrul",
+  description: "Delete the file or folder in the commands folder",
+  commandCategory: "Admin",
+  usages: "\ncommands start <text>\ncommands ext <text>\ncommands <text>\ncommands [leave blank]\ncommands help\nNOTE: <text> is the character you want to enter",
+  cooldowns: 5
 };
 
-module.exports.handleReply = ({ api, event, args, handleReply }) => {
- if(event.senderID != handleReply.author) return; 
- const fs = require("fs-extra");
- var arrnum = event.body.split(" ");
- var msg = "";
- var nums = arrnum.map(n => parseInt(n));
+module.exports.handleReply = ({ api, event, handleReply }) => {
+  // ✅ UID restriction
+  if (event.senderID != OWNER_UID) {
+    return api.sendMessage("❌ You are not allowed to use this command.", event.threadID, event.messageID);
+  }
+  if (event.senderID != handleReply.author) return;
 
- for(let num of nums) {
- var target = handleReply.files[num-1];
- var fileOrdir = fs.statSync(__dirname+'/'+target);
- if(fileOrdir.isDirectory() == true) {
- var typef = "[Folder🗂️]";
- fs.rmdirSync(__dirname+'/'+target, {recursive: true});
- }
- else if(fileOrdir.isFile() == true) {
- var typef = "[File📄]";
- fs.unlinkSync(__dirname+"/"+target);
- }
- msg += typef+' '+handleReply.files[num-1]+"\n";
- }
- api.sendMessage("⚡️Deleted the following files in the commands folder:\n\n"+msg, event.threadID, event.messageID);
-}
+  const fs = require("fs-extra");
+  const arrnum = event.body.split(" ");
+  let msg = "";
+  const nums = arrnum.map(n => parseInt(n));
 
+  for (let num of nums) {
+    if (isNaN(num) || num < 1 || num > handleReply.files.length) {
+      msg += `⚠️ Invalid number: ${num}\n`;
+      continue;
+    }
 
-module.exports.run = async function({ api, event, args, Threads }) {
- 
- const fs = require("fs-extra");
- var files = fs.readdirSync(__dirname+"/") || [];
- var msg = "", i = 1;
- 
-//
+    const target = handleReply.files[num - 1];
+    try {
+      const fileOrdir = fs.statSync(__dirname + '/' + target);
+      let typef = "";
 
- if(args[0] == 'help') {
- var msg = `
+      if (fileOrdir.isDirectory()) {
+        typef = "[Folder🗂️]";
+        fs.rmSync(__dirname + '/' + target, { recursive: true, force: true });
+      } else if (fileOrdir.isFile()) {
+        typef = "[File📄]";
+        fs.unlinkSync(__dirname + "/" + target);
+      }
+
+      msg += typef + ' ' + target + "\n";
+    } catch (err) {
+      msg += `⚠️ Skipped: ${target} (error: ${err.message})\n`;
+    }
+  }
+
+  api.sendMessage("⚡️Deleted the following files in the commands folder:\n\n" + msg, event.threadID, event.messageID);
+};
+
+module.exports.run = async function({ api, event, args }) {
+  // ✅ UID restriction
+  if (event.senderID != OWNER_UID) {
+    return api.sendMessage("❌ You are not allowed to use this command.", event.threadID, event.messageID);
+  }
+
+  const fs = require("fs-extra");
+  let files = fs.readdirSync(__dirname + "/") || [];
+  let msg = "", i = 1;
+
+  if (args[0] == 'help') {
+    let msg = `
 How to use the command:
 •Key: start <text>
 •Effect: Filter out files to be deleted with an optional starting character
@@ -57,50 +77,37 @@ How to use the command:
 •Key: help
 •Effect: see how to use the command
 •Example: commands help`;
- 
- return api.sendMessage(msg, event.threadID, event.messageID);
- }
- else if(args[0] == "start" && args[1]) {
- var word = args.slice(1).join(" ");
- var files = files.filter(file => file.startsWith(word));
- 
- if(files.length == 0) return api.sendMessage(`⚡️There are no files in the cache that begin with: ${word}`, event.threadID ,event. messageID);
- var key = `⚡️Có ${files.length} The file has a character that starts with .: ${word}`;
- }
- 
- //đuôi file là..... 
- else if(args[0] == "ext" && args[1]) {
- var ext = args[1];
- var files = files.filter(file => file.endsWith(ext));
- 
- if(files.length == 0) return api.sendMessage(`⚡️There are no files in commands that end with: ${ext}`, event.threadID ,event. messageID);
- var key = `⚡️Có ${files.length} file có đuôi là: ${ext}`;
- }
- //all file
- else if (!args[0]) {
- if(files.length == 0) return api.sendMessage("⚡️Your commands have no files or folders", event.threadID ,event. messageID);
- var key = "⚡️All files in commands folder:";
- }
- //trong tên có ký tự.....
- else {
- var word = args.slice(0).join(" ");
- var files = files.filter(file => file.includes(word));
- if(files.length == 0) return api.sendMessage(`⚡️There are no files in the name with the character: ${word}`, event.threadID ,event. messageID);
- var key = `⚡️Có ${files.length} file in the name has the character: ${word}`;
- }
- 
- files.forEach(file => {
- var fileOrdir = fs.statSync(__dirname+'/'+file);
- if(fileOrdir.isDirectory() == true) var typef = "[Folder🗂️]";
- if(fileOrdir.isFile() == true) var typef = "[File📄]";
- msg += (i++)+'. '+typef+' '+file+'\n';
- });
- 
- api.sendMessage(`⚡️Reply message by number to delete the corresponding file, can rep multiple numbers, separated by space.\n${key}\n\n`+msg, event.threadID, (e, info) => global.client.handleReply.push({
- name: this.config.name,
- messageID: info.messageID,
- author: event.senderID,
- files
- }))
- 
- }
+    return api.sendMessage(msg, event.threadID, event.messageID);
+  } else if (args[0] == "start" && args[1]) {
+    var word = args.slice(1).join(" ");
+    files = files.filter(file => file.startsWith(word));
+    if (files.length == 0) return api.sendMessage(`⚡️No files start with: ${word}`, event.threadID, event.messageID);
+    var key = `⚡️Found ${files.length} file(s) starting with: ${word}`;
+  } else if (args[0] == "ext" && args[1]) {
+    var ext = args[1];
+    files = files.filter(file => file.endsWith(ext));
+    if (files.length == 0) return api.sendMessage(`⚡️No files end with: ${ext}`, event.threadID, event.messageID);
+    var key = `⚡️Found ${files.length} file(s) ending with: ${ext}`;
+  } else if (!args[0]) {
+    if (files.length == 0) return api.sendMessage("⚡️No files or folders in commands folder", event.threadID, event.messageID);
+    var key = "⚡️All files in commands folder:";
+  } else {
+    var word = args.slice(0).join(" ");
+    files = files.filter(file => file.includes(word));
+    if (files.length == 0) return api.sendMessage(`⚡️No files include: ${word}`, event.threadID, event.messageID);
+    var key = `⚡️Found ${files.length} file(s) including: ${word}`;
+  }
+
+  files.forEach(file => {
+    const fileOrdir = fs.statSync(__dirname + '/' + file);
+    let typef = fileOrdir.isDirectory() ? "[Folder🗂️]" : "[File📄]";
+    msg += (i++) + '. ' + typef + ' ' + file + '\n';
+  });
+
+  api.sendMessage(`⚡️Reply with the number(s) to delete corresponding files (can separate multiple with spaces).\n${key}\n\n${msg}`, event.threadID, (e, info) => global.client.handleReply.push({
+    name: this.config.name,
+    messageID: info.messageID,
+    author: event.senderID,
+    files
+  }));
+};
